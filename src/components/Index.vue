@@ -4,26 +4,40 @@ import { ref } from "vue";
 
 const selected=ref(null);
 const movies=ref(false);
+const trailers=ref(false);
+
 
 const GetSetData = async () => {
     movies.value= ( 
     await axios.get("https://api.themoviedb.org/3/search/movie", {
         params: {
             api_key: "23b3a0cee96fcac58b28918686474f75",
-            include_adult: "true",
+            include_adult: "false",
             query: selected.value,
         },
     })
-    ).data.results[0];
-    console.log(movies.value);
+    ).data.results;
+    
 };
+
+const getTrailers = async(movie) => {
+  await axios.get(`https://api.themoviedb.org/3/movie/${movie.id}`, {
+      params: {
+          api_key: "23b3a0cee96fcac58b28918686474f75",
+          append_to_response: "videos",
+      }}).then((response) => {
+        trailers = response.data.videos.results.filter((trailer) => trailer.type === "Trailer");
+      }
+    );
+    console.log(movie.data.videos.results);
+    // console.log(movies.value);
+}
 </script>
 
 <template>
   <div id="searchbar">
     <form action="index.html" method="POST" @submit.prevent="GetSetData">
       <select id="movies" v-model="selected" value="None">
-        <option value="None">None</option>
         <option value="Batman">Batman</option>
         <option value="Superman">Superman</option>
         <option value="The Flash">The Flash</option>
@@ -38,22 +52,22 @@ const GetSetData = async () => {
       <button type="submit" id="search_btn" @click="GetSetData">Get</button>
     </form>
   </div>
-  <div>
-    <p class="intro" v-if="movies">
-        <br> ID: {{movies.id}}
-        <br> Title - {{movies.title}}
-        <br> Original Title - {{movies.original_title}}
-        <br> Release Date: {{movies.release_date}} 
-        <br> Popularity: {{movies.popularity}}               
-        <br> Original Language: {{movies.original_language}}
-        <br> Vote Count: {{movies.vote_count}}
-        <br> Vote Average: {{movies.vote_average}}
-        <br> Included Trailer: {{movies.includedTrailer}}
-        <br> Adult: {{movies.adult}}
-        <br> Overview: {{movies.overview}}
+  <div v-for="movie in movies" v-if="movies">
+    <p class="intro">
+        <br> ID: {{movie.id}}
+        <br> Title - {{movie.title}}
+        <br> Original Title - {{movie.original_title}}
+        <br> Release Date: {{movie.release_date}} 
+        <br> Popularity: {{movie.popularity}}               
+        <br> Original Language: {{movie.original_language}}
+        <br> Vote Count: {{movie.vote_count}}
+        <br> Vote Average: {{movie.vote_average}}
+        <br> Included Trailer: {{movie.includedTrailer}}
+        <br> Adult: {{movie.adult}}
+        <br> Overview: {{movie.overview}}
     </p>
-    <iframe :src="'https://www.youtube.com/embed/'+{{trailers.at(0).key}}"></iframe>
-    <img :src="'https://image.tmdb.org/t/p/w500'+{{movies.poster_path}}" class="image">
+    <iframe :src="'https://www.youtube.com/embed/'+trailers.at(0).key"></iframe>
+    <img v-if="movie.poster_path" :src="'https://image.tmdb.org/t/p/w500'+movie.poster_path" class="image">
   </div>
 </template>
 
