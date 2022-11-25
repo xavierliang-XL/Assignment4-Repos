@@ -4,10 +4,13 @@ import { ref } from "vue";
 
 const selected = ref(null);
 const movies = ref(false);
-let trailers= ref([]);
+let trailers = ref([]);
+let isVideos= ref([]);
+let errorOccured=false;
 
 const GetSetData = async () => {
-  trailers=ref([]);
+  isVideos = ref([]);
+  trailers = ref([]);
   movies.value = (
     await axios.get("https://api.themoviedb.org/3/search/movie", {
       params: {
@@ -18,15 +21,27 @@ const GetSetData = async () => {
     })
   ).data.results;
 
-  for(let movie of movies.value){
-    trailers.value.push((await axios.get(`https://api.themoviedb.org/3/movie/${movie.id}`, {
-    params: {
-      api_key: "23b3a0cee96fcac58b28918686474f75",
-      append_to_response: "videos",
+  for (let movie of movies.value) {
+    try {
+      trailers.value.push(
+        (
+          await axios.get(`https://api.themoviedb.org/3/movie/${movie.id}`, {
+            params: {
+              api_key: "23b3a0cee96fcac58b28918686474f75",
+              append_to_response: "videos",
+            },
+          })
+        ).data.videos.results
+          .filter((trailer) => trailer.type === "Trailer")
+          .at(0).key
+      );      
+      errorOccured=false;
+    }catch(error){
+      errorOccured=true;
     }
-  })
-  ).data.videos.results.filter((trailer) => trailer.type === "Trailer").at(0).key);
+    isVideos.value.push(!errorOccured);
   }
+  console.log(trailers)
 };
 </script>
 
@@ -50,22 +65,28 @@ const GetSetData = async () => {
   </div>
   <div v-for="(movie, index) in movies" v-if="movies">
     <p class="intro">
-      <br> ID: {{ movie.id }}
-      <br> Title - {{ movie.title }}
-      <br> Original Title - {{ movie.original_title }}
-      <br> Release Date: {{ movie.release_date }}
-      <br> Popularity: {{ movie.popularity }}
-      <br> Original Language: {{ movie.original_language }}
-      <br> Vote Count: {{ movie.vote_count }}
-      <br> Vote Average: {{ movie.vote_average }}
-      <br> Adult: {{ movie.adult }}
-      <br> Overview: {{ movie.overview }}
+      <br />
+      ID: {{ movie.id }} <br />
+      Title - {{ movie.title }} <br />
+      Original Title - {{ movie.original_title }} <br />
+      Release Date: {{ movie.release_date }} <br />
+      Popularity: {{ movie.popularity }} <br />
+      Original Language: {{ movie.original_language }} <br />
+      Vote Count: {{ movie.vote_count }} <br />
+      Vote Average: {{ movie.vote_average }} <br />
+      Adult: {{ movie.adult }} <br />
+      Overview: {{ movie.overview }}
     </p>
-    <iframe :src="`https://www.youtube.com/embed/${trailers[index]}`" />
+    <iframe :src="`https://www.youtube.com/embed/${trailers[index]}`" alt="there's no video available" v-if="isVideos[index]==true"/>
+    <img src="../assets/images/youtube-error.webp" class="una" v-if="isVideos[index]==false"/>
     <!-- <p>
       {{trailers[index]}}
     </p> -->
-    <img v-if="movie.poster_path" :src="'https://image.tmdb.org/t/p/w500' + movie.poster_path" class="image">
+    <img
+      v-if="movie.poster_path"
+      :src="'https://image.tmdb.org/t/p/w500' + movie.poster_path"
+      class="image"
+    />
   </div>
 </template>
 
